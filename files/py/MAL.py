@@ -2,6 +2,7 @@ from pandas import read_csv
 from collections import namedtuple
 from configparser import ConfigParser
 from datetime import timedelta, time
+import numpy as np
 
 КТА = namedtuple('КТА', 'широта долгота превышение')
 
@@ -17,10 +18,25 @@ class Я:
 	
 	@property
 	def СЧ(я): return я.__СЧ
-
 		
 	@property
 	def РЧ(я): return я.__РЧ
+
+class ИД(Я):
+	def __init__(я, *СЧ, **РЧ):
+		try:
+			i = ConfigParser()
+			i.read('../ini/МАЛ.ini', encoding='utf8')
+			for _ in i.sections():
+				РЧ[_] = РЧ.get(_, {})
+				for __ in i[_]:
+					РЧ[_][__] = i[_][__]
+					# print(__, '=', i[_][__])
+		except: 
+			print('ОШИБКА! Проверить наличие файла МАЛ.ini')
+		finally: 
+			return super().__init__(*СЧ, **РЧ)
+	
 
 class А(Я):
 	'''
@@ -31,11 +47,16 @@ class А(Я):
 	'''
 	@property
 	def ICAO(я):
-		try: возврат = я.СЧ[0].upper()
+		try: 
+			if len(я.СЧ[0]) == 4: возврат = я.СЧ[0].upper()
+			elif len(я.СЧ[0]) == 3:
+				f = read_csv('../csv/IATA.csv', index_col='iata')
+				возврат = f.loc[я.СЧ[0]]['icao'].upper()
+			else: raise ValueError()
 		except:
 			print('ОШИБКА! Нет информации о коде ИКАО')
 			возврат = None
-		return возврат
+		finally: return возврат
 	
 	@property
 	def IATA(я):
@@ -424,6 +445,9 @@ class А(Я):
 			print('ОШИБКА! Проверить файлы Сводка.csv и МАЛ.ini')
 			возврат = None
 		finally: return возврат
+	
+	def __repr__(я):
+		return я.ICAO + '|' + я.IATA + '|' + я.Название + '|' + я.Город
 
 class С(Я):
 	"""
@@ -452,6 +476,9 @@ class С(Я):
 		- ATR-72
 		- SSJ-100
 	"""
+	
+	def __repr__(я): return я.Тип
+	
 	@property
 	def Тип(я):
 		try:
@@ -567,3 +594,186 @@ class С(Я):
 			print('ОШИБКА! Проверить наличие данных по типу в файле МАЛ.ini')
 			возврат = None
 		finally: return возврат
+
+class М(Я):
+	"""
+	Класс М (МАРШРУТ) обеспечивает хранение данных о маршрутах полётов
+	"""
+	@property
+	def Расстояние(я):
+		try:
+			if len(я.СЧ[0]) == 3:
+				#print('Код ИАТА аэропорта вылета получен')
+				f = read_csv('../csv/IATA.csv', index_col='iata')
+				АПВ = f.loc[я.СЧ[0]]['icao']
+			elif len(я.СЧ[0]) == 4: 
+				#print('Код ИКАО аэропорта вылета получен')
+				АПВ = я.СЧ[0]
+			else: raise ValueError
+			if len(я.СЧ[1]) == 3:
+				f = read_csv('../csv/IATA.csv', index_col='iata')
+				АПП = f.loc[я.СЧ[1]]['icao']
+				#print('Код ИАТА аэропорта прибытия получен')
+			elif len(я.СЧ[1]) == 4: 
+				АПП = я.СЧ[1]
+				#print('Код ИАТА аэропорта вылета получен')
+			else: raise ValueError
+			f = read_csv('../csv/FTD.csv', index_col='FT')
+			#print(АПВ+АПП)
+			возврат = f.loc[АПВ+АПП]['D']
+			#print(возврат)
+		except: 
+			print('ОШИБКА! Проверить коды ИКАО (ИАТА)')
+			возврат = None
+		finally: return возврат
+	
+	@property
+	def АПВ(я):
+		"""
+		АПВ - аэропорт вылета
+		"""
+		try:
+			if len(я.СЧ[0]) == 3:
+				#print('Код ИАТА аэропорта вылета получен')
+				f = read_csv('../csv/IATA.csv', index_col='iata')
+				возврат = А(f.loc[я.СЧ[0]]['icao'])
+			elif len(я.СЧ[0]) == 4: 
+				#print('Код ИКАО аэропорта вылета получен')
+				возврат = А(я.СЧ[0])
+			else: raise ValueError
+		except: 
+			print('ОШИБКА! Проверить коды ИКАО (ИАТА)')
+			возврат = None
+		finally: return возврат
+	
+	@property
+	def АПП(я):
+		"""
+		АПВ - аэропорт прибытия
+		"""
+		try:
+			if len(я.СЧ[1]) == 3:
+				#print('Код ИАТА аэропорта прибытия получен')
+				f = read_csv('../csv/IATA.csv', index_col='iata')
+				возврат = А(f.loc[я.СЧ[1]]['icao'])
+			elif len(я.СЧ[1]) == 4: 
+				#print('Код ИКАО аэропорта прибытия получен')
+				возврат = А(я.СЧ[1])
+			else: raise ValueError
+		except: 
+			print('ОШИБКА! Проверить коды ИКАО (ИАТА)')
+			возврат = None
+		finally: return возврат
+
+class Р(А, С, М):
+	"""
+	Класс Р (РЕЙС) обеспечивает хранение и применение данных о рейсе между аэродромами (аэропортами). Входные данные при создании экземпляра:
+		- код ИКАО или ИАТА аэропорта вылета
+		- код ИКАО или ИАТА аэропорта прибытия
+		- тип воздушного судна
+	"""
+	@property
+	def АПВ(я):
+		"""
+		АПВ - аэропорт вылета
+		"""
+		try:
+			возврат = А(я.СЧ[0])
+		except:
+			print('ОШИБКА! Проверить данные аэропорта вылета')
+			возврат = None
+		finally: return возврат
+	
+	@property
+	def АПП(я):
+		"""
+		АПП - аэропорт прибытия
+		"""
+		try:
+			возврат = А(я.СЧ[1])
+		except:
+			print('ОШИБКА! Проверить данные аэропорта прибытия')
+			возврат = None
+		finally: return возврат
+	
+	@property
+	def ВС(я):
+		"""
+		ВС - тип воздушного судна для выполнения рейса
+		"""
+		try:
+			возврат = С(я.СЧ[2])
+		except:
+			print('ОШИБКА! Проверить тип ВС')
+			возврат = None
+		finally: return возврат
+	
+	@property
+	def ГРКТА(я):
+		"""
+		ГРКТА - геодезическое расстояние между контрольными точками аэродромов
+		"""
+		try:
+			if len(я.СЧ[0]) == 3:
+				#print('Код ИАТА аэропорта вылета получен')
+				f = read_csv('../csv/IATA.csv', index_col='iata')
+				АПВ = f.loc[я.СЧ[0]]['icao']
+			elif len(я.СЧ[0]) == 4: 
+				#print('Код ИКАО аэропорта вылета получен')
+				АПВ = я.СЧ[0]
+			else: raise ValueError
+			if len(я.СЧ[1]) == 3:
+				f = read_csv('../csv/IATA.csv', index_col='iata')
+				АПП = f.loc[я.СЧ[1]]['icao']
+				#print('Код ИАТА аэропорта прибытия получен')
+			elif len(я.СЧ[1]) == 4: 
+				АПП = я.СЧ[1]
+				#print('Код ИАТА аэропорта вылета получен')
+			else: raise ValueError
+			f = read_csv('../csv/FTD.csv', index_col='FT')
+			#print(АПВ+АПП)
+			возврат = f.loc[АПВ+АПП]['D']
+			#print(возврат)
+		except: 
+			print('ОШИБКА! Проверить коды ИКАО (ИАТА)')
+			возврат = None
+		finally: return возврат
+	
+	@property
+	def ТС(я):
+		"""
+		ТС - техническая скорость расчётного типа ВС в км/час
+		"""
+		try:
+			возврат = (я.ГРКТА * я.ВС.КС)/(я.ГРКТА + (я.DT * я.ВС.КС))
+		except:
+			print('ОШИБКА! Проверить данные ВС')
+			возврат = None
+		finally: return возврат
+		
+	@property
+	def DT(я):
+		"""
+		DT - эмпирический коэффициент, учитывающий потери времени при маневрировании в районе аэропортов
+		"""
+		xp = [3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000]
+		fp = [0.165, 0.17, 0.177, 0.19, 0.22, 0.25, 0.3, 0.355, 0.435]
+		xp1 = [100, 400]
+		fp1 = [3000, 7000]
+		if я.ГРКТА < 100:
+			возврат = fp[0]
+		elif (100 <= я.ГРКТА <= 400) and (я.ВС != 'ЛМС-901'):
+			возврат = np.interp(я.ГРКТА, xp1, fp1)
+			возврат = np.interp(возврат, xp, fp)
+		elif (400 < я.ГРКТА) and (я.ВС != 'ЛМС-901'):
+			возврат = fp[4]
+		else:
+			возврат = fp[0]
+		return возврат
+	
+	@property
+	def ПП(я):
+		"""
+		ПП - продолжительность беспосадочного полёта
+		"""
+		return timedelta(seconds = (я.ГРКТА/я.ТС)*3600)
