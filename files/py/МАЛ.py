@@ -9,8 +9,10 @@ import numpy as np
 
 ВПП = namedtuple('ВПП', 'длина ширина тип курс освещение')
 
-# Беспосадочный маршрут
-БПМ = namedtuple('Маршрут', 'откуда куда дистанция')
+# Беспосадочный маршрут 
+# АВ - агломерация аэропорта вылета
+# АП - агломерация аэропорта прибытия
+БПМ = namedtuple('Маршрут', 'откуда куда дистанция АВ АП')
 
 ВРЕМЯ = namedtuple('ВРЕМЯ', 'timedelta час мин')
 
@@ -230,10 +232,11 @@ class А(Я):
 		возврат = []
 		try:
 			f = read_csv('../csv/FTD.csv', index_col='FT')
+			a = read_csv('../csv/Агломерация.csv', index_col='ICAO')
 			for _ in f.index:
 				FT = я.ICAO+_[4:]
 				if (FT == _ )and (f.loc[FT]['D'] < 1000):
-					возврат.append(БПМ(я.ICAO, _[4:], f.loc[FT]['D']))
+					возврат.append(БПМ(я.ICAO, _[4:], f.loc[FT]['D'], a.loc[я.ICAO]['Агломерация'], a.loc[_[4:]]['Агломерация']))
 		except: 
 			print('ОШИБКА! Не найден файл дистанций')
 		finally: return возврат
