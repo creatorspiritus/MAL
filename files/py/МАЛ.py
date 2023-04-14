@@ -1,4 +1,5 @@
 from pandas import read_csv
+from pathlib import Path
 from collections import namedtuple
 from configparser import ConfigParser
 from datetime import timedelta, time, datetime
@@ -49,7 +50,7 @@ class ИД(Я):
 				РЧ[_] = РЧ.get(_, {})
 				for __ in i[_]:
 					РЧ[_][__] = i[_][__]
-					# print(__, '=', i[_][__])
+			РЧ['Каталог'] = Path().absolute().parent
 		except: 
 			print('ОШИБКА! Проверить наличие файла МАЛ.ini')
 		finally: 
@@ -157,7 +158,7 @@ class А(Я):
 		Тип: 			str
 		'''
 		try:
-			f = read_csv('../csv/aopa-points-export.csv', sep=';', index_col='Индекс')
+			f = read_csv('../csv/aopa-points-export.csv', encoding='utf8', sep=';', index_col='Индекс')
 			возврат = f.loc[я.ICAO]['Email']
 		except: 
 			print('ОШИБКА! Не найден код ИКАО в перечне аэродромов АОПА')
@@ -171,7 +172,7 @@ class А(Я):
 		Тип: 			str
 		'''
 		try:
-			f = read_csv('../csv/aopa-points-export.csv', sep=';', index_col='Индекс')
+			f = read_csv('../csv/aopa-points-export.csv', encoding='utf8', sep=';', index_col='Индекс')
 			возврат = f.loc[я.ICAO]['Город']
 		except: 
 			print('ОШИБКА! Не найден код ИКАО в перечне аэродромов АОПА')
