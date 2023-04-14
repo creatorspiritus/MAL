@@ -1,4 +1,4 @@
-from pandas import read_csv
+from pandas import read_csv, read_xml
 from pathlib import Path
 from collections import namedtuple
 from configparser import ConfigParser
@@ -44,28 +44,34 @@ class Я:
 	def РЧ(я): return я.__РЧ
 
 class ИД(Я):
-	def __init__(я, *СЧ, **РЧ):
-		try:
-			i = ConfigParser()
-			i.read('../ini/МАЛ.ini', encoding='utf8')
-			for _ in i.sections():
-				РЧ[_] = РЧ.get(_, {})
-				for __ in i[_]:
-					РЧ[_][__] = i[_][__]
-			РЧ['Каталог'] = Path().absolute().parent
-		except: 
-			print('ОШИБКА! Проверить наличие файла МАЛ.ini')
-		finally: 
-			return super().__init__(*СЧ, **РЧ)
+    def __init__(я, *СЧ, **РЧ):
+        try:
+            kv = read_xml('https://www.cbr-xml-daily.ru/daily_utf8.xml')
+            новый_курс_доллара = str(float(kv.set_index('Name').loc['Доллар США']['Value'].replace(',', '.')))
+            новый_курс_евро = str(float(kv.set_index('Name').loc['Евро']['Value'].replace(',', '.')))
+            новый_курс_юань = str(float(kv.set_index('Name').loc['Китайский юань']['Value'].replace(',', '.')))
+            i = ConfigParser()
+            i.read('../ini/МАЛ.ini', encoding='utf8')
+            i.set('Курсы валют', 'Доллар', новый_курс_доллара)
+            i.set('Курсы валют', 'Евро', новый_курс_евро)
+            i.set('Курсы валют', 'Юань', новый_курс_юань)
+            with open('../ini/МАЛ.ini', 'w') as configfile: i.write(configfile)
+            for _ in i.sections():
+                РЧ[_] = РЧ.get(_, {})
+                for __ in i[_]:
+                    РЧ[_][__] = i[_][__]             
+            РЧ['Каталог'] = Path().absolute().parent
+        except:
+            print('ОШИБКА! Проверить наличие файла МАЛ.ini')
+        finally: 
+            return super().__init__(*СЧ, **РЧ)
 	
-	@property
-	def ДНЭОА(я):
-		"""
-		ДНЭОА - даты начала эксплуатации опорных аэродромов
-		"""
-		...
-		
-	
+	#@property
+ 	#def ДНЭОА(я):
+	#	"""
+	#	ДНЭОА - даты начала эксплуатации опорных аэродромов
+	#	"""
+	#	...
 
 class А(Я):
 	'''
