@@ -1,4 +1,4 @@
-from pandas import read_csv, read_xml
+import pandas as pd
 from pathlib import Path
 from collections import namedtuple
 from configparser import ConfigParser
@@ -44,27 +44,47 @@ class Я:
 	def РЧ(я): return я.__РЧ
 
 class ИД(Я):
-    def __init__(я, *СЧ, **РЧ):
-        try:
-            kv = read_xml('https://www.cbr-xml-daily.ru/daily_utf8.xml')
-            новый_курс_доллара = str(float(kv.set_index('Name').loc['Доллар США']['Value'].replace(',', '.')))
-            новый_курс_евро = str(float(kv.set_index('Name').loc['Евро']['Value'].replace(',', '.')))
-            новый_курс_юань = str(float(kv.set_index('Name').loc['Китайский юань']['Value'].replace(',', '.')))
-            i = ConfigParser()
-            i.read('../ini/МАЛ.ini', encoding='utf8')
-            i.set('Курсы валют', 'Доллар', новый_курс_доллара)
-            i.set('Курсы валют', 'Евро', новый_курс_евро)
-            i.set('Курсы валют', 'Юань', новый_курс_юань)
-            with open('../ini/МАЛ.ini', 'w') as configfile: i.write(configfile)
-            for _ in i.sections():
-                РЧ[_] = РЧ.get(_, {})
-                for __ in i[_]:
-                    РЧ[_][__] = i[_][__]             
-            РЧ['Каталог'] = Path().absolute().parent
-        except:
-            print('ОШИБКА! Проверить наличие файла МАЛ.ini')
-        finally: 
-            return super().__init__(*СЧ, **РЧ)
+	def __init__(я, *СЧ, **РЧ):
+		try:
+			i = ConfigParser()
+			i.read('../ini/МАЛ.ini', encoding='utf8')
+			доллар = i['Курсы валют']['доллар']
+			евро = i['Курсы валют']['евро']
+			юань = i['Курсы валют']['юань']
+			try:
+				kv = pd.read_xml('https://www.cbr-xml-daily.ru/daily_utf8.xml')
+				доллар = str(float(kv.set_index('Name').loc['Доллар США']['Value'].replace(',', '.')))
+				евро = str(float(kv.set_index('Name').loc['Евро']['Value'].replace(',', '.')))
+				юань = str(float(kv.set_index('Name').loc['Китайский юань']['Value'].replace(',', '.')))
+				with open('../ini/МАЛ.ini', 'w') as configfile:
+					i.write(configfile)
+			except: ...
+			finally:
+				i.set('Курсы валют', 'Доллар', доллар)
+				i.set('Курсы валют', 'Евро', евро)
+				i.set('Курсы валют', 'Юань', юань)
+			for _ in i.sections():
+				РЧ[_] = РЧ.get(_, {})
+				for __ in i[_]:
+					РЧ[_][__] = i[_][__]
+			РЧ['Каталог'] = Path().absolute().parent		
+		except:
+			print('ОШИБКА! Проверить наличие файла МАЛ.ini')
+		finally:
+			return super().__init__(*СЧ, **РЧ)
+	
+	@property
+	def СА(я):
+		"""
+		Свойство возвращает сумму агломераций в радиусе 100 км от КТА всех аэропортов проекта
+		"""
+		возврат = 0
+		for _ in я.РЧ['Аэродромы проекта']:
+			возврат += А(_.upper()).Агломерация
+		# Исключение из расчётов трёх аэропортов московского авиаузла
+		возврат -= (А('UUDD').Агломерация + А('UUEE').Агломерация + А('UUBW').Агломерация)
+		return возврат
+		
 	
 	#@property
  	#def ДНЭОА(я):
@@ -85,7 +105,7 @@ class А(Я):
 		try: 
 			if len(я.СЧ[0]) == 4: возврат = я.СЧ[0].upper()
 			elif len(я.СЧ[0]) == 3:
-				f = read_csv('../csv/IATA.csv', index_col='iata')
+				f = pd.read_csv('../csv/IATA.csv', index_col='iata')
 				возврат = f.loc[я.СЧ[0]]['icao'].upper()
 			else: raise ValueError()
 		except:
@@ -102,11 +122,11 @@ class А(Я):
 		Тип: 			str
 		'''
 		try:
-			f = read_csv('../csv/IATA.csv', index_col='icao')
+			f = pd.read_csv('../csv/IATA.csv', index_col='icao')
 			возврат = f.loc[я.ICAO]['iata']
 		except: 
 			print('ОШИБКА! Не найдено соответствие кодов ИКАО и ИАТА')
-			возврат = None
+			возврат = ''
 		finally: return возврат
 	
 	@property
@@ -116,7 +136,7 @@ class А(Я):
 		Тип: 			namedtuple('КТА' 'широта долгота превышение')
 		'''
 		try:
-			f = read_csv('../csv/aopa-points-export.csv', sep=';', index_col='Индекс')
+			f = pd.read_csv('../csv/aopa-points-export.csv', sep=';', index_col='Индекс')
 			возврат = КТА(
 				f.loc[я.ICAO]['Широта КТА'],
 				f.loc[я.ICAO]['Долгота КТА'],
@@ -133,7 +153,7 @@ class А(Я):
 		Тип: 			namedtuple('ВПП', 'длина ширина тип курс освещение')
 		'''
 		try:
-			f = read_csv('../csv/aopa-points-export.csv', sep=';', index_col='Индекс')
+			f = pd.read_csv('../csv/aopa-points-export.csv', sep=';', index_col='Индекс')
 			возврат = ВПП(
 				f.loc[я.ICAO]['Длина основной ВПП'],
 				f.loc[я.ICAO]['Ширина основной ВПП'],
@@ -152,7 +172,7 @@ class А(Я):
 		Тип: 			str
 		'''
 		try:
-			f = read_csv('../csv/aopa-points-export.csv', sep=';', index_col='Индекс')
+			f = pd.read_csv('../csv/aopa-points-export.csv', sep=';', index_col='Индекс')
 			возврат = f.loc[я.ICAO]['Примечание']
 		except: 
 			print('ОШИБКА! Не найден код ИКАО в перечне аэродромов АОПА')
@@ -166,7 +186,7 @@ class А(Я):
 		Тип: 			str
 		'''
 		try:
-			f = read_csv('../csv/aopa-points-export.csv', encoding='utf8', sep=';', index_col='Индекс')
+			f = pd.read_csv('../csv/aopa-points-export.csv', encoding='utf8', sep=';', index_col='Индекс')
 			возврат = f.loc[я.ICAO]['Email']
 		except: 
 			print('ОШИБКА! Не найден код ИКАО в перечне аэродромов АОПА')
@@ -180,8 +200,8 @@ class А(Я):
 		Тип: 			str
 		'''
 		try:
-			f = read_csv('../csv/aopa-points-export.csv', encoding='utf8', sep=';', index_col='Индекс')
-			возврат = f.loc[я.ICAO]['Город']
+			f = pd.read_csv('../csv/aopa-points-export.csv', encoding='utf8', sep=';', index_col='Индекс')
+			возврат = str(f.loc[я.ICAO]['Город'])
 		except: 
 			print('ОШИБКА! Не найден код ИКАО в перечне аэродромов АОПА')
 			возврат = None
@@ -194,8 +214,8 @@ class А(Я):
 		Тип: 			str
 		'''
 		try:
-			f = read_csv('../csv/aopa-points-export.csv', sep=';', index_col='Индекс')
-			возврат = f.loc[я.ICAO]['Название']
+			f = pd.read_csv('../csv/aopa-points-export.csv', sep=';', index_col='Индекс')
+			возврат = str(f.loc[я.ICAO]['Название'])
 		except: 
 			print('ОШИБКА! Не найден код ИКАО в перечне аэродромов АОПА')
 			возврат = None
@@ -208,7 +228,7 @@ class А(Я):
 		Тип: 			bool
 		'''
 		try:
-			f = read_csv('../csv/aopa-points-export.csv', sep=';', index_col='Индекс')
+			f = pd.read_csv('../csv/aopa-points-export.csv', sep=';', index_col='Индекс')
 			возврат = True if f.loc[я.ICAO]['Действующий'] == 'Действующий' else False
 		except: 
 			print('ОШИБКА! Не найден код ИКАО в перечне аэродромов АОПА')
@@ -222,7 +242,7 @@ class А(Я):
 		Тип: 			str
 		'''
 		try:
-			f = read_csv('../csv/aopa-points-export.csv', sep=';', index_col='Индекс')
+			f = pd.read_csv('../csv/aopa-points-export.csv', sep=';', index_col='Индекс')
 			возврат = f.loc[я.ICAO]['Тип']
 		except: 
 			print('ОШИБКА! Не найден код ИКАО в перечне аэродромов АОПА')
@@ -237,8 +257,8 @@ class А(Я):
 		'''
 		возврат = []
 		try:
-			f = read_csv('../csv/FTD.csv', index_col='FT')
-			a = read_csv('../csv/Агломерация.csv', index_col='ICAO')
+			f = pd.read_csv('../csv/FTD.csv', index_col='FT')
+			a = pd.read_csv('../csv/Агломерация.csv', index_col='ICAO')
 			for _ in f.index:
 				FT = я.ICAO+_[4:]
 				if (FT == _ )and (f.loc[FT]['D'] < 1000):
@@ -255,7 +275,7 @@ class А(Я):
 		Тип: 			float
 		'''
 		try:
-			f = read_csv('../csv/Сводка.csv', index_col='ICAO')
+			f = pd.read_csv('../csv/Сводка.csv', index_col='ICAO')
 			возврат = f.loc[я.ICAO]['Пассажиропоток']
 		except: 
 			print('ОШИБКА! Не найден файл Сводка.csv')
@@ -270,7 +290,7 @@ class А(Я):
 		Тип: 			float
 		'''
 		try:
-			f = read_csv('../csv/Сводка.csv', index_col='ICAO')
+			f = pd.read_csv('../csv/Сводка.csv', index_col='ICAO')
 			возврат = f.loc[я.ICAO]['Груз, тонн']
 		except: 
 			print('ОШИБКА! Не найден файл Сводка.csv')
@@ -285,7 +305,7 @@ class А(Я):
 		Тип: 			float
 		'''
 		try:
-			f = read_csv('../csv/Сводка.csv', index_col='ICAO')
+			f = pd.read_csv('../csv/Сводка.csv', index_col='ICAO')
 			возврат = f.loc[я.ICAO]['Почта, тонн']
 		except: 
 			print('ОШИБКА! Не найден файл Сводка.csv')
@@ -300,7 +320,7 @@ class А(Я):
 		Тип: 			float
 		'''
 		try:
-			f = read_csv('../csv/Сводка.csv', index_col='ICAO')
+			f = pd.read_csv('../csv/Сводка.csv', index_col='ICAO')
 			возврат = f.loc[я.ICAO]['Цена ТС-1, руб']
 		except: 
 			print('ОШИБКА! Не найден файл Сводка.csv')
@@ -319,7 +339,7 @@ class А(Я):
 		Тип: 			float
 		'''
 		try:
-			f = read_csv('../csv/Сводка.csv', index_col='ICAO')
+			f = pd.read_csv('../csv/Сводка.csv', index_col='ICAO')
 			возврат = int(f.loc[я.ICAO]['Категория'])
 		except: 
 			print('ОШИБКА! Не найден файл Сводка.csv')
@@ -341,7 +361,7 @@ class А(Я):
 		Свойство возвращает True когда аэропорт узловой. В другом случае - False 
 		Тип: 			bool
 		'''
-		f = read_csv('../csv/Сводка.csv', index_col='ICAO')
+		f = pd.read_csv('../csv/Сводка.csv', index_col='ICAO')
 		if f.loc[я.ICAO]['Вид'] == 'УА': return True
 		else: return False
 	
@@ -351,7 +371,7 @@ class А(Я):
 		Свойство возвращает True при наличии технической возможности использования аэропорта в качестве опорного аэродрома проекта. В другом случае - False 
 		Тип: 			bool
 		'''
-		f = read_csv('../csv/Сводка.csv', index_col='ICAO')
+		f = pd.read_csv('../csv/Сводка.csv', index_col='ICAO')
 		if f.loc[я.ICAO]['Вид'] == 'УА': return True
 		else: return False
 		
@@ -362,7 +382,7 @@ class А(Я):
 		Тип: 			int
 		'''
 		try:
-			f = read_csv('../csv/Агломерация.csv', index_col='ICAO')
+			f = pd.read_csv('../csv/Агломерация.csv', index_col='ICAO')
 			возврат = f.loc[я.ICAO]['Агломерация']
 		except: 
 			print('ОШИБКА! Не найден файл Агломерация.csv')
@@ -388,7 +408,7 @@ class А(Я):
 		Тип: 			int
 		'''
 		try:
-			f = read_csv('../csv/Агломерация.csv', index_col='ICAO')
+			f = pd.read_csv('../csv/Агломерация.csv', index_col='ICAO')
 			i = ConfigParser()
 			i.read('../ini/МАЛ.ini', encoding='utf8')
 			if я.Узловой: возврат = int(f.loc[я.ICAO]['Агломерация'] * float(i['Коэффициенты авиационной подвижности населения']['Средний']))
@@ -472,7 +492,7 @@ class А(Я):
 		Свойство возвращает коэффициент авиационной подвижности населения для данного аэропорта. Коэффициент определяется как средний (2.5) для узловых аэропортов (в терминологии Транспортной стратегии Российской Федерации) или максимальный (4.2) для аэродромов (аэропортов) обеспечения транспортной доступности, расположенных в удалённых и труднодоступных районах Российской Федерации, согласно Приложению № 7 к Распоряжению Правительства РФ от 27 ноября 2021 года № 3363-р
 		'''
 		try:
-			f = read_csv('../csv/Сводка.csv', index_col='ICAO')
+			f = pd.read_csv('../csv/Сводка.csv', index_col='ICAO')
 			i = ConfigParser()
 			i.read('../ini/МАЛ.ini', encoding='utf8')
 			if я.Узловой: возврат = float(i['Коэффициенты авиационной подвижности населения']['Средний'])
@@ -482,8 +502,20 @@ class А(Я):
 			возврат = None
 		finally: return возврат
 	
+	@property
+	def РППМАКС(я):
+		"""
+		РППМАКС - максимальное значение расчётного пассажиропотока. Определяется как произведение агломерации населения на максимально возможный коэффициент авиационной подвижности населения (4.2 - для аэродромов удалённых и труднодоступных районов; 2.5 - для остальных аэродромов)
+		"""
+		возврат = 0
+		if я.Узловой: возврат = я.Агломерация * 2.5
+		else: возврат = я.Агломерация * 4.2 
+		return возврат
+	
 	def __repr__(я):
 		return я.ICAO + '|' + я.IATA + '|' + я.Название + '|' + я.Город
+
+# ====================================================================
 
 class С(Я):
 	"""
@@ -631,6 +663,8 @@ class С(Я):
 			возврат = None
 		finally: return возврат
 
+# ====================================================================
+
 class М(Я):
 	"""
 	Класс М (МАРШРУТ) обеспечивает хранение данных о маршрутах полётов
@@ -640,21 +674,21 @@ class М(Я):
 		try:
 			if len(я.СЧ[0]) == 3:
 				#print('Код ИАТА аэропорта вылета получен')
-				f = read_csv('../csv/IATA.csv', index_col='iata')
+				f = pd.read_csv('../csv/IATA.csv', index_col='iata')
 				АПВ = f.loc[я.СЧ[0]]['icao']
 			elif len(я.СЧ[0]) == 4: 
 				#print('Код ИКАО аэропорта вылета получен')
 				АПВ = я.СЧ[0]
 			else: raise ValueError
 			if len(я.СЧ[1]) == 3:
-				f = read_csv('../csv/IATA.csv', index_col='iata')
+				f = pd.read_csv('../csv/IATA.csv', index_col='iata')
 				АПП = f.loc[я.СЧ[1]]['icao']
 				#print('Код ИАТА аэропорта прибытия получен')
 			elif len(я.СЧ[1]) == 4: 
 				АПП = я.СЧ[1]
 				#print('Код ИАТА аэропорта вылета получен')
 			else: raise ValueError
-			f = read_csv('../csv/FTD.csv', index_col='FT')
+			f = pd.read_csv('../csv/FTD.csv', index_col='FT')
 			#print(АПВ+АПП)
 			возврат = f.loc[АПВ+АПП]['D']
 			#print(возврат)
@@ -671,7 +705,7 @@ class М(Я):
 		try:
 			if len(я.СЧ[0]) == 3:
 				#print('Код ИАТА аэропорта вылета получен')
-				f = read_csv('../csv/IATA.csv', index_col='iata')
+				f = pd.read_csv('../csv/IATA.csv', index_col='iata')
 				возврат = А(f.loc[я.СЧ[0]]['icao'])
 			elif len(я.СЧ[0]) == 4: 
 				#print('Код ИКАО аэропорта вылета получен')
@@ -690,7 +724,7 @@ class М(Я):
 		try:
 			if len(я.СЧ[1]) == 3:
 				#print('Код ИАТА аэропорта прибытия получен')
-				f = read_csv('../csv/IATA.csv', index_col='iata')
+				f = pd.read_csv('../csv/IATA.csv', index_col='iata')
 				возврат = А(f.loc[я.СЧ[1]]['icao'])
 			elif len(я.СЧ[1]) == 4: 
 				#print('Код ИКАО аэропорта прибытия получен')
@@ -700,6 +734,8 @@ class М(Я):
 			print('ОШИБКА! Проверить коды ИКАО (ИАТА)')
 			возврат = None
 		finally: return возврат
+
+# ====================================================================
 
 class Р(А, С, М):
 	"""
@@ -792,21 +828,21 @@ class Р(А, С, М):
 		try:
 			if len(я.СЧ[0]) == 3:
 				#print('Код ИАТА аэропорта вылета получен')
-				f = read_csv('../csv/IATA.csv', index_col='iata')
+				f = pd.read_csv('../csv/IATA.csv', index_col='iata')
 				АПВ = f.loc[я.СЧ[0]]['icao']
 			elif len(я.СЧ[0]) == 4: 
 				#print('Код ИКАО аэропорта вылета получен')
 				АПВ = я.СЧ[0]
 			else: raise ValueError
 			if len(я.СЧ[1]) == 3:
-				f = read_csv('../csv/IATA.csv', index_col='iata')
+				f = pd.read_csv('../csv/IATA.csv', index_col='iata')
 				АПП = f.loc[я.СЧ[1]]['icao']
 				#print('Код ИАТА аэропорта прибытия получен')
 			elif len(я.СЧ[1]) == 4: 
 				АПП = я.СЧ[1]
 				#print('Код ИАТА аэропорта вылета получен')
 			else: raise ValueError
-			f = read_csv('../csv/FTD.csv', index_col='FT')
+			f = pd.read_csv('../csv/FTD.csv', index_col='FT')
 			#print(АПВ+АПП)
 			возврат = f.loc[АПВ+АПП]['D']
 			#print(возврат)
