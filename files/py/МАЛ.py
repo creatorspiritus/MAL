@@ -8,6 +8,7 @@ import numpy as np
 import folium
 from folium.raster_layers import WmsTileLayer
 from folium.raster_layers import TileLayer
+from dateutil.relativedelta import relativedelta
 
 КТА = namedtuple('КТА', 'широта долгота превышение')
 
@@ -17,8 +18,10 @@ from folium.raster_layers import TileLayer
 # АВ - агломерация аэропорта вылета
 # АП - агломерация аэропорта прибытия
 БПМ = namedtuple('Маршрут', 'откуда куда дистанция АВ АП')
-
+СДА = namedtuple('АЭРОДРОМ', 'ICAO IATA название город широта долгота превышение узловой категория агломерация очередь дата')
 ВРЕМЯ = namedtuple('ВРЕМЯ', 'timedelta час мин')
+
+
 
 # Структура себестоимости рейса
 # АвиаГСМ = 25
@@ -121,15 +124,15 @@ class ИД(Я):
 				layers=None,
 				name='ESRI Shaded',
 				attr='ESRI World Shaded Relief',).add_to(карта)
-
-			точка = folium.map.FeatureGroup()
-			точка.add_child(
-				folium.features.CircleMarker(
-					[центр[0], центр[1]], radius=3,
-					color='red', fill_color='red', 
+			for _ in я.ОА:
+				точка = folium.map.FeatureGroup()
+				точка.add_child(
+					folium.features.CircleMarker(
+						[_.широта, _.долгота], radius=3,
+						color='red', fill_color='red', 
+					)
 				)
-			)
-			карта.add_child(точка)
+				карта.add_child(точка)
             
 			if зона500:
 				folium.Polygon(
@@ -178,8 +181,42 @@ class ИД(Я):
 			except: ...
 			finally: ...
 		return карта
-		
 	
+	@property
+	def ОА(я):
+		"""
+  		Свойство возвращает список кодов ИКАО опорных аэродромов проекта
+		"""
+		возврат = []
+		for _ in я.РЧ['Опорные аэродромы']:
+			значение = я.РЧ['Опорные аэродромы'][_].split(' ')
+			очередь = значение[0]
+			# Следующий месяц
+			# print(dt_now + relativedelta(months=+1))
+			СП = datetime(
+				int(я.РЧ['Даты']['старт проекта'].split('.')[0]),
+				int(я.РЧ['Даты']['старт проекта'].split('.')[1]),
+				int(я.РЧ['Даты']['старт проекта'].split('.')[2]))
+			дата = СП + relativedelta(months=+3*int(очередь))
+			возврат.append(
+       			СДА(
+            # ICAO IATA название город широта долгота превышение узловой категория агломерация
+            А(_.upper()).ICAO,
+            А(_.upper()).IATA,
+            А(_.upper()).Название,
+            А(_.upper()).Город,
+            А(_.upper()).КТА.широта,
+            А(_.upper()).КТА.долгота,
+            А(_.upper()).КТА.превышение,
+            А(_.upper()).Узловой,
+            А(_.upper()).Категория,
+            А(_.upper()).Агломерация,
+            очередь,
+            дата
+				)
+			)
+		return возврат
+     
 	#@property
  	#def ДНЭОА(я):
 	#	"""
@@ -219,9 +256,11 @@ class А(Я):
 			f = pd.read_csv('../csv/IATA.csv', index_col='icao')
 			возврат = f.loc[я.ICAO]['iata']
 		except: 
-			print('ОШИБКА! Не найдено соответствие кодов ИКАО и ИАТА')
+			print('ПРЕДУПРЕЖДЕНИЕ! Не найдено соответствие кодов ИКАО и ИАТА')
 			возврат = ''
-		finally: return возврат
+		finally:
+			if isinstance(возврат, float): возврат = ''
+			return возврат
 	
 	@property
 	def КТА(я):
@@ -298,8 +337,10 @@ class А(Я):
 			возврат = str(f.loc[я.ICAO]['Город'])
 		except: 
 			print('ОШИБКА! Не найден код ИКАО в перечне аэродромов АОПА')
-			возврат = None
-		finally: return возврат
+			возврат = ''
+		finally:
+			if isinstance(возврат, float) or (возврат == 'nan'): возврат = ''
+			return возврат
 	
 	@property
 	def Название(я):
