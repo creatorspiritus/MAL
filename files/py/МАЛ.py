@@ -5,6 +5,9 @@ from collections import namedtuple
 from configparser import ConfigParser
 from datetime import timedelta, time, datetime
 import numpy as np
+import folium
+from folium.raster_layers import WmsTileLayer
+from folium.raster_layers import TileLayer
 
 КТА = namedtuple('КТА', 'широта долгота превышение')
 
@@ -85,6 +88,96 @@ class ИД(Я):
 		# Исключение из расчётов трёх аэропортов московского авиаузла
 		возврат -= (А('UUDD').Агломерация + А('UUEE').Агломерация + А('UUBW').Агломерация)
 		return возврат
+
+	def Карта(я, тип = 'аэродромы', вид = 'рельеф', направления=False, зона500 = False, зона1000 = False):
+		"""
+        Функция возвращает карту в формате HTML.
+        Исходные данные:
+            - тип:
+                - аэродромы;
+                - города;
+            - вид:
+                - рельеф
+        """
+		карта = None
+		центр = (66.413951, 94.241942)  # Географический центр РФ
+		if тип == 'аэродромы':
+			карта = folium.Map(
+				location=центр, zoom_start=4, width='100%')
+			"""
+			    "http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer" // World Topographic Map
+			    "http://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer" // World Street Map
+			    "http://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer" // Light Gray Canvas
+			    "http://services.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer" // National Geographic World Map
+			    "http://services.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer" // Ocean Basemap
+			    "http://services.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer" // Terrain with Labels
+			    "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" // World Imagery
+			"""
+			ссылка = (
+				'http://services.arcgisonline.com/arcgis/rest/services/World_Shaded_Relief'
+				+ '/MapServer/tile/{z}/{y}/{x}')
+			WmsTileLayer(
+				url=ссылка,
+				layers=None,
+				name='ESRI Shaded',
+				attr='ESRI World Shaded Relief',).add_to(карта)
+
+			точка = folium.map.FeatureGroup()
+			точка.add_child(
+				folium.features.CircleMarker(
+					[центр[0], центр[1]], radius=3,
+					color='red', fill_color='red', 
+				)
+			)
+			карта.add_child(точка)
+            
+			if зона500:
+				folium.Polygon(
+					[(_.latitude, _.longitude) for _ in я.Круг(радиус=500)],
+					color='blue', weight=0, fill=True, fill_color='blue',
+					fill_opacity=0.1).add_to(карта)
+
+			if зона1000:
+				folium.Polygon(
+					[(_.latitude, _.longitude) for _ in я.Круг()],
+					color='blue', weight=0, fill=True, fill_color='blue',
+					fill_opacity=0.1).add_to(карта)
+			
+			if направления:
+				for _ in я.СписокАэродромов():
+					аэродром = АЭРОДРОМ(_)
+					точка = folium.map.FeatureGroup()
+					точка.add_child(
+						folium.features.CircleMarker(
+							[аэродром.КТА.широта, аэродром.КТА.долгота], 
+							radius=5, color='blue', fill_color='blue',
+						tooltip=_))
+					карта.add_child(точка)
+
+		elif тип == 'города':
+			карта = folium.Map(
+				location=центр, zoom_start=8, width='100%')
+			folium.Polygon([(_.latitude, _.longitude) for _ in я.Круг(радиус=100)],
+				color='gray',
+				weight=0,
+				fill=True,
+				fill_color='gray',
+				fill_opacity=0.1).add_to(карта)
+            
+			try:
+				путь = '../csv/Агломерации/'+str(я.ICAO)+'_агломерации.csv'
+				g = read_csv(путь)
+				for _ in g.index:
+					точка = folium.map.FeatureGroup()
+					точка.add_child(
+						folium.features.CircleMarker(
+							[g.loc[_]['Широта'], g.loc[_]['Долгота']], 
+							radius=3, color='gray', fill_color='gray', 
+							tooltip=g.loc[_]['Название'] + '|' + str(g.loc[_]['Население'])))
+					карта.add_child(точка)
+			except: ...
+			finally: ...
+		return карта
 		
 	
 	#@property
