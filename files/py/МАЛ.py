@@ -413,7 +413,7 @@ class А(Я):
 			f = pd.read_csv('../csv/Сводка.csv', index_col='ICAO')
 			возврат = f.loc[я.ICAO]['Пассажиропоток']
 		except: 
-			print('ОШИБКА! Не найден файл Сводка.csv')
+			print('ОШИБКА! Не найден код ' + str(я.ICAO) + ' в файле Сводка.csv')
 			возврат = None
 		finally: return возврат
 	
@@ -428,7 +428,7 @@ class А(Я):
 			f = pd.read_csv('../csv/Сводка.csv', index_col='ICAO')
 			возврат = f.loc[я.ICAO]['Груз, тонн']
 		except: 
-			print('ОШИБКА! Не найден файл Сводка.csv')
+			print('ОШИБКА! Не найдено значение грзопотока для кода ' + str(я.ICAO) + ' файл Сводка.csv')
 			возврат = None
 		finally: return возврат
 		
@@ -458,7 +458,7 @@ class А(Я):
 			f = pd.read_csv('../csv/Сводка.csv', index_col='ICAO')
 			возврат = f.loc[я.ICAO]['Цена ТС-1, руб']
 		except: 
-			print('ОШИБКА! Не найден файл Сводка.csv')
+			print('ОШИБКА! Не найдено значение стоимости ТС-1 для кода ' + str(я.ICAO) + ' файл Сводка.csv')
 			возврат = None
 		finally: return возврат
 	
@@ -477,7 +477,7 @@ class А(Я):
 			f = pd.read_csv('../csv/Сводка.csv', index_col='ICAO')
 			возврат = int(f.loc[я.ICAO]['Категория'])
 		except: 
-			print('ОШИБКА! Не найден файл Сводка.csv')
+			print('ОШИБКА! Не найдено значение категории для кода ' + str(я.ICAO) + ' файл Сводка.csv')
 			возврат = None
 		finally: return возврат
 	
