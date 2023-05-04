@@ -7,6 +7,69 @@ from datetime import timedelta, time, datetime
 
 КТА = namedtuple('КТА', 'широта долгота превышение')
 
+def MCA(t, h):
+	"""
+	ФУНКЦИЯ
+	Определение МСА аэродрома
+	Входные параметры: температура в градусах Цельсия и высота КТА в метрах
+	Возвращаемое значение: МСА аэродрома
+	ТВЗ: int или None (в случае выхода параметров за предельные значения)
+	"""
+	h = 0.3048 * h
+	MCAm60t = [-54, -45]
+	MCAm60h = [4500, 0]
+	MCAm50t = [-54, -35]
+	MCAm50h = [9500, 0]
+	MCAm40t = [-54, -25]
+	MCAm40h = [14500, 0]
+	MCAm30t = [-54, -15]
+	MCAm30h = [19500, 0]
+	MCAm20t = [-54, -5]
+	MCAm20h = [24500, 0]
+	MCAm10t = [-45, 5]
+	MCAm10h = [25000, 0]
+	MCAt = [-35, 15]
+	MCAh = [25000, 0]
+	MCAp10t = [-25, 25]
+	MCAp10h = [25000, 0]
+	MCAp20t = [-15, 35]
+	MCAp20h = [25000, 0]
+	MCAp30t = [-5, 45]
+	MCAp30h = [25000, 0]
+	результат = None
+	if (-54 <= t <= -45) and (0 <= h <= 4500):
+		результат = interp(t, MCAm60t, MCAm60h)
+		if 0 <= результат: return -60
+	elif (-54 <= t <= -35) and (0 <= h <= 9500):
+		результат = interp(t, MCAm50t, MCAm50h)
+		if 0 <= результат: return -50
+	elif (-54 <= t <= -25) and (0 <= h <= 14500):
+		результат = interp(t, MCAm40t, MCAm40h)
+		if 0 <= результат: return -40
+	elif (-54 <= t <= -15) and (0 <= h <= 19500):
+		результат = interp(t, MCAm30t, MCAm30h)
+		if 0 <= результат: return -30
+	elif (-54 <= t <= -5) and (0 <= h <= 24500):
+		результат = interp(t, MCAm20t, MCAm20h)
+		if 0 <= результат: return -20
+	elif (-45 <= t <= 5) and (0 <= h <= 25000):
+		результат = interp(t, MCAm10t, MCAm10h)
+		if 0 <= результат: return -10
+	elif (-35 <= t <= 15) and (0 <= h <= 25000):
+		результат = interp(t, MCAt, MCAh)
+		if 0 <= результат: return 0
+	elif (-25 <= t <= 25) and (0 <= h <= 25000):
+		результат = interp(t, MCAp10t, MCAp10h)
+		if 0 <= результат: return 10
+	elif (-15 <= t <= 35) and (0 <= h <= 25000):
+		результат = interp(t, MCAp20t, MCAp20h)
+		if 0 <= результат: return 20
+	elif (-5 <= t <= 45) and (0 <= h <= 25000):
+		результат = interp(t, MCAp30t, MCAp30h)
+		if 0 <= результат: return 30
+	else: print('ВНИМАНИЕ! Выход за пределы эксплуатационных параметров!')
+	return результат
+
 class Я:
 	def __init__(я, *СЧ, **РЧ):
 		я.__СЧ = СЧ
