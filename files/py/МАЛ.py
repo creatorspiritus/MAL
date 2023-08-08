@@ -49,6 +49,10 @@ class Я:
 		
 	@property
 	def РЧ(я): return я.__РЧ
+ 
+	def ДЧ(я, *СЧ, **РЧ):
+		if len(СЧ): я.__СЧ += СЧ
+		if len(РЧ): я.__РЧ = dict(list(я.РЧ.items()) + list(РЧ.items()))
 
 class ИД(Я):
 	"""
