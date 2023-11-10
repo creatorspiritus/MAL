@@ -3,11 +3,9 @@ from pathlib import Path
 from operator import attrgetter
 from collections import namedtuple
 from configparser import ConfigParser
-from datetime import timedelta, time, datetime
+from Я import *
+# from datetime import timedelta, time, datetime
 import numpy as np
-import folium
-from folium.raster_layers import WmsTileLayer
-from folium.raster_layers import TileLayer
 from dateutil.relativedelta import relativedelta
 
 КТА = namedtuple('КТА', 'широта долгота превышение')
@@ -21,9 +19,7 @@ from dateutil.relativedelta import relativedelta
 СДА = namedtuple('АЭРОДРОМ', 'ICAO IATA название город широта долгота превышение узловой категория агломерация очередь дата')
 ВРЕМЯ = namedtuple('ВРЕМЯ', 'timedelta час мин')
 
-
-
-# Структура себестоимости рейса
+# Структура себестоимости рейса в процентах
 # АвиаГСМ = 25
 # Амортизация = 1
 # Аэропортовое = 30
@@ -39,234 +35,18 @@ from dateutil.relativedelta import relativedelta
 # Начисления = 3
 ССР = namedtuple('СЕБЕСТОИМОСТЬ', 'АвиаГСМ Амортизация Аэропортовое ТОиР АЭНО Метео Агентские Аренда Страхование Прочие Общепроизводственные ФОТ Начисления')
 
-class Я:
-	def __init__(я, *СЧ, **РЧ):
-		я.__СЧ = СЧ
-		я.__РЧ = РЧ
-	
-	@property
-	def СЧ(я): return я.__СЧ
-		
-	@property
-	def РЧ(я): return я.__РЧ
- 
-	def ДЧ(я, *СЧ, **РЧ):
-		"""
-		Метод добавляет содержательные и реквизитные элементы в экемпляр класса
-		"""	
-		я.__СЧ = я.СЧ + СЧ 
-		я.__РЧ = я.РЧ | РЧ
-
-
-class ИД(Я):
-	"""
-	Класс ИД (ИСХОДНЫЕ ДАННЫЕ)
-	Хранение и обновление исходных данных проекта
-	"""
-	def __init__(я, *СЧ, **РЧ):
-		try:
-			i = ConfigParser()
-			i.read('../ini/МАЛ.ini', encoding='utf8')
-			доллар = i['Курсы валют']['доллар']
-			евро = i['Курсы валют']['евро']
-			юань = i['Курсы валют']['юань']
-			try:
-				kv = pd.read_xml('https://www.cbr-xml-daily.ru/daily_utf8.xml')
-				доллар = str(float(kv.set_index('Name').loc['Доллар США']['Value'].replace(',', '.')))
-				евро = str(float(kv.set_index('Name').loc['Евро']['Value'].replace(',', '.')))
-				юань = str(float(kv.set_index('Name').loc['Китайский юань']['Value'].replace(',', '.')))
-				with open('../ini/МАЛ.ini', 'w') as configfile:
-					i.write(configfile)
-			except: ...
-			finally:
-				i.set('Курсы валют', 'Доллар', доллар)
-				i.set('Курсы валют', 'Евро', евро)
-				i.set('Курсы валют', 'Юань', юань)
-			for _ in i.sections():
-				РЧ[_] = РЧ.get(_, {})
-				for __ in i[_]:
-					РЧ[_][__] = i[_][__]
-			РЧ['Каталог'] = Path().absolute().parent		
-		except:
-			print('ОШИБКА! Проверить наличие файла МАЛ.ini')
-		finally:
-			return super().__init__(*СЧ, **РЧ)
-	
-	@property
-	def СА(я):
-		"""
-		СВОЙСТВО 
-		Сумма агломераций в радиусе 100 км от КТА всех аэропортов проекта
-		"""
-		возврат = 0
-		for _ in я.РЧ['Аэродромы проекта']:
-			возврат += А(_).Агломерация
-		# Исключение из расчётов трёх аэропортов московского авиаузла
-		возврат -= (А('UUDD').Агломерация + А('UUEE').Агломерация + А('UUBW').Агломерация)
-		return возврат
-
-	def Карта(я, тип = 'аэродромы', вид = 'рельеф', 
-		направления=False, зона500 = False, зона1000 = False):
-		"""
-        ФУНКЦИЯ
-		Возвращает карту с опорными аэродромами проекта
-        Исходные данные:
-            - тип:
-                - аэродромы
-            - вид:
-                - рельеф
-			- направления:
-				- False (аэродромы направлений не отображаются)
-				- True (аэродромы направлений отображаются)
-			- зона500:
-				- True (на карту наносится зона полётов ЛМС-901 в радиусе 500 км от КТА)
-				- False (не отображается)
-			- зона1000:
-				- True (на карту наносится зона полётов Ил-114-300 и ТВРС-44 в радиусе 1000 км от КТА)
-				- False (не отображается)
-        """
-		карта = None
-		центр = (66.413951, 94.241942)  # Географический центр РФ
-		if тип == 'аэродромы':
-			карта = folium.Map(
-				location=центр, zoom_start=4, width='100%')
-			"""
-			    "http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer" // World Topographic Map
-			    "http://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer" // World Street Map
-			    "http://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer" // Light Gray Canvas
-			    "http://services.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer" // National Geographic World Map
-			    "http://services.arcgisonline.com/ArcGIS/rest/services/Ocean_Basemap/MapServer" // Ocean Basemap
-			    "http://services.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer" // Terrain with Labels
-			    "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer" // World Imagery
-			"""
-			ссылка = (
-				'http://services.arcgisonline.com/arcgis/rest/services/World_Shaded_Relief'
-				+ '/MapServer/tile/{z}/{y}/{x}')
-			WmsTileLayer(
-				url=ссылка,
-				layers=None,
-				name='ESRI Shaded',
-				attr='ESRI World Shaded Relief',).add_to(карта)
-			for _ in я.ОА:
-				точка = folium.map.FeatureGroup()
-				точка.add_child(
-					folium.features.CircleMarker(
-						[_.широта, _.долгота], radius=3,
-						color='blue', fill_color='blue', 
-					)
-				)
-				карта.add_child(точка)
-            
-			if зона500:
-				folium.Polygon(
-					[(_.latitude, _.longitude) for _ in я.Круг(радиус=500)],
-					color='blue', weight=0, fill=True, fill_color='blue',
-					fill_opacity=0.1).add_to(карта)
-
-			if зона1000:
-				folium.Polygon(
-					[(_.latitude, _.longitude) for _ in я.Круг()],
-					color='blue', weight=0, fill=True, fill_color='blue',
-					fill_opacity=0.1).add_to(карта)
-			
-			if направления:
-				for _ in я.РЧ['Аэродромы проекта']:
-					аэродром = А(_)
-					точка = folium.map.FeatureGroup()
-					точка.add_child(
-						folium.features.CircleMarker(
-							[аэродром.КТА.широта, аэродром.КТА.долгота], 
-							radius=2, color='grey', fill_color='grey',
-						tooltip=_))
-					карта.add_child(точка)
-
-		elif тип == 'города':
-			карта = folium.Map(
-				location=центр, zoom_start=8, width='100%')
-			folium.Polygon([(_.latitude, _.longitude) for _ in я.Круг(радиус=100)],
-				color='gray',
-				weight=0,
-				fill=True,
-				fill_color='gray',
-				fill_opacity=0.1).add_to(карта)
-            
-			try:
-				путь = '../csv/Агломерации/'+str(я.ICAO)+'_агломерации.csv'
-				g = read_csv(путь)
-				for _ in g.index:
-					точка = folium.map.FeatureGroup()
-					точка.add_child(
-						folium.features.CircleMarker(
-							[g.loc[_]['Широта'], g.loc[_]['Долгота']], 
-							radius=3, color='gray', fill_color='gray', 
-							tooltip=g.loc[_]['Название'] + '|' + str(g.loc[_]['Население'])))
-					карта.add_child(точка)
-			except: ...
-			finally: ...
-		return карта
-	
-	@property
-	def ОА(я):
-		"""
-  		СВОЙСТВО 
-		Список кодов ИКАО опорных аэродромов проекта
-		ТВЗ: namedtuple СДА
-		"""
-		возврат = []
-		for _ in я.РЧ['Опорные аэродромы']:
-			значение = я.РЧ['Опорные аэродромы'][_].split(' ')
-			очередь = значение[0]
-			# Следующий месяц
-			# print(dt_now + relativedelta(months=+1))
-			СП = datetime(
-				int(я.РЧ['Даты']['начало проекта'].split('.')[0]),
-				int(я.РЧ['Даты']['начало проекта'].split('.')[1]),
-				int(я.РЧ['Даты']['начало проекта'].split('.')[2]))
-			дата = СП + relativedelta(months=+3*int(очередь))
-			возврат.append(
-       			СДА(
-            # ICAO IATA название город широта долгота превышение узловой категория агломерация
-            А(_.upper()).ICAO,
-            А(_.upper()).IATA,
-            А(_.upper()).Название,
-            А(_.upper()).Город,
-            А(_.upper()).КТА.широта,
-            А(_.upper()).КТА.долгота,
-            А(_.upper()).КТА.превышение,
-            А(_.upper()).Узловой,
-            А(_.upper()).Категория,
-            А(_.upper()).Агломерация,
-            очередь,
-            дата
-				)
-			)
-		return возврат
-     
-	@property
-	def ДНОЭ(я):
-		"""
-		СВОЙСТВО
-		ДНОЭ - дата начала основного этапа
-		ТВЗ: datetime
-		"""
-		return datetime(
-			int(я.РЧ['Даты']['начало проекта'].split('.')[0]),
-			int(я.РЧ['Даты']['начало проекта'].split('.')[1]),
-			int(я.РЧ['Даты']['начало проекта'].split('.')[2]))
-
-
 class АЭРОДРОМ(Я):
-	'''
-	Класс АЭРОДРОМ
-	При создании экземпляра класса требуется
-	обязательный ввод значения кода ИКАО аэродрома
-	Пример: NOZ = АЭРОДРОМ('UNWW')
-	'''
-	def __init__(я, *СЧ, **РЧ):
-		try:
-			РЧ['ICAO'] = РЧ.get('ICAO', СЧ[0])
-		except:
-			print('[ОШИБКА] Проверить код ICAO' )
+    '''
+    Класс АЭРОДРОМ
+    При создании экземпляра класса требуется
+    обязательный ввод значения кода ИКАО аэродрома
+    Пример: NOZ = АЭРОДРОМ('UNWW')
+    '''
+    def __init__(я, *СЧ, **РЧ):
+        try:
+            РЧ['ICAO'] = РЧ.get('ICAO', СЧ[0])
+            
+		except: print('[ОШИБКА] Проверить код ICAO' )
 		finally: ...
 		super().__init__(*СЧ, **РЧ)
 
@@ -706,18 +486,18 @@ class АЭРОДРОМ(Я):
 		список = []
 		if я.МВПП < int(ИД().РЧ['Пассажиропотоки']['минимальный']):
 			for _ in sorted(я.Направления, key=attrgetter('дистанция')):
-				if А(_.куда).Узловой:
+				if АЭРОДРОМ(_.куда).Узловой:
 					список.append(_)
 					return список
 				else: ...
 		elif int(ИД().РЧ['Пассажиропотоки']['минимальный']) <= я.МВПП <= int(ИД().РЧ['Пассажиропотоки']['минимальный для тврс-44']):
 			for _ in sorted(я.Направления, key=attrgetter('дистанция')):
-				if А(_.куда).Узловой:
+				if АЭРОДРОМ(_.куда).Узловой:
 					список.append(_)
 		elif я.Узловой: return я.Направления
 		else:
 			for _ in я.Направления:
-				if А(_.куда).Узловой:
+				if АЭРОДРОМ(_.куда).Узловой:
 					список.append(_)
 			return я.список
 		return список
@@ -728,7 +508,7 @@ class АЭРОДРОМ(Я):
 
 # ====================================================================
 
-class С(Я):
+class САМОЛЁТ(Я):
 	"""
 	Класс С (САМОЛЁТ) обеспечивает хранение и применение свойств самолётов.
 	При создании экземпляра класса необходимо вводить следующие возможные значения:
@@ -876,9 +656,9 @@ class С(Я):
 
 # ====================================================================
 
-class М(Я):
+class МАРШРУТ(Я):
 	"""
-	Класс М (МАРШРУТ) обеспечивает хранение данных о маршрутах полётов
+	Класс МАРШРУТ обеспечивает хранение данных о маршрутах полётов
 	"""
 	@property
 	def Расстояние(я):
@@ -917,10 +697,10 @@ class М(Я):
 			if len(я.СЧ[0]) == 3:
 				#print('Код ИАТА аэропорта вылета получен')
 				f = pd.read_csv('../csv/IATA.csv', index_col='iata')
-				возврат = А(f.loc[я.СЧ[0]]['icao'])
+				возврат = АЭРОДРОМ(f.loc[я.СЧ[0]]['icao'])
 			elif len(я.СЧ[0]) == 4: 
 				#print('Код ИКАО аэропорта вылета получен')
-				возврат = А(я.СЧ[0])
+				возврат = АЭРОДРОМ(я.СЧ[0])
 			else: raise ValueError
 		except: 
 			print('ОШИБКА! Проверить коды ИКАО (ИАТА)')
@@ -936,10 +716,10 @@ class М(Я):
 			if len(я.СЧ[1]) == 3:
 				#print('Код ИАТА аэропорта прибытия получен')
 				f = pd.read_csv('../csv/IATA.csv', index_col='iata')
-				возврат = А(f.loc[я.СЧ[1]]['icao'])
+				возврат = АЭРОДРОМ(f.loc[я.СЧ[1]]['icao'])
 			elif len(я.СЧ[1]) == 4: 
 				#print('Код ИКАО аэропорта прибытия получен')
-				возврат = А(я.СЧ[1])
+				возврат = АЭРОДРОМ(я.СЧ[1])
 			else: raise ValueError
 		except: 
 			print('ОШИБКА! Проверить коды ИКАО (ИАТА)')
@@ -948,7 +728,7 @@ class М(Я):
 
 # ====================================================================
 
-class Р(А, С, М):
+class Р(АЭРОДРОМ, САМОЛЁТ, МАРШРУТ):
 	"""
 	Класс Р (РЕЙС) обеспечивает хранение и применение данных о рейсе между аэродромами (аэропортами). Входные данные при создании экземпляра:
 		- код ИКАО или ИАТА аэропорта вылета
@@ -1001,7 +781,7 @@ class Р(А, С, М):
 		АПВ - аэропорт вылета
 		"""
 		try:
-			возврат = А(я.СЧ[0])
+			возврат = АЭРОДРОМ(я.СЧ[0])
 		except:
 			print('ОШИБКА! Проверить данные аэропорта вылета')
 			возврат = None
@@ -1013,7 +793,7 @@ class Р(А, С, М):
 		АПП - аэропорт прибытия
 		"""
 		try:
-			возврат = А(я.СЧ[1])
+			возврат = АЭРОДРОМ(я.СЧ[1])
 		except:
 			print('ОШИБКА! Проверить данные аэропорта прибытия')
 			возврат = None
@@ -1025,7 +805,7 @@ class Р(А, С, М):
 		ВС - тип воздушного судна для выполнения рейса
 		"""
 		try:
-			возврат = С(я.СЧ[2])
+			возврат = САМОЛЁТ(я.СЧ[2])
 		except:
 			print('ОШИБКА! Проверить тип ВС')
 			возврат = None
