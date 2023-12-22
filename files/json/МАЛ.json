@@ -1,6 +1,64 @@
 {
     "вариант": {
-        "Центр": {},
+        "Центр 51": {
+            "ЮВК": [
+                "UNWW",
+                "UNOO",
+                "UNKY",
+                "UWOR",
+                "UIUU",
+                "URWA",
+                "UIAA",
+                "URMO",
+                "UHBW",
+                "ZFC7",
+                "UHBB",
+                "UHHH",
+                "UHWW",
+                "UNBG",
+                "UNEE",
+                "UNNT",
+                "UWOO"
+            ],
+            "СВК": [
+                "UUOB",
+                "ULOO",
+                "ULAA",
+                "ULAM",
+                "UUYW",
+                "USMU",
+                "UOOO",
+                "UOHH",
+                "UEST",
+                "UERP",
+                "UEEE",
+                "UHMM",
+                "UHMS",
+                "UHMP",
+                "UHMA",
+                "UHPA",
+                "UHPL"
+            ],
+            "ЦВК": [
+                "UHPP",
+                "UHPK",
+                "UHSH",
+                "UELL",
+                "UERR",
+                "UIBB",
+                "UNIP",
+                "UNSS",
+                "USHH",
+                "UUYY",
+                "UUDL",
+                "UUWW",
+                "UUOL",
+                "UWSG",
+                "UWLL",
+                "URKK",
+                "URFB"
+            ]
+        },
         "Юг": {},
         "Восток": {}
     }
