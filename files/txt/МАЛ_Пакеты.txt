@@ -1,0 +1,8 @@
+pydantic
+fastapi
+sqlmodel
+fastui
+uvicorn
+python-multipart
+python-docx
+docxtpl
