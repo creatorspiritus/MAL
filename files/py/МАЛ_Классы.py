@@ -6,6 +6,8 @@ from typing import Optional
 class Полоса(SQLModel, table=True):
     пк: Optional[int] = Field(default=None, primary_key=True)
     название: str
+    длина: int
+    ширина: int
 
 
 
