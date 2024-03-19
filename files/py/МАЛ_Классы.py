@@ -29,5 +29,6 @@ class Аэродром(SQLModel, table=True):
 class Аэропорт(SQLModel, table=True):
     пк: Optional[int] = Field(default=None, primary_key=True)
     iata: str = Field(title='Код IATA', unique=True, max_length=3, min_length=3)
-    икао: str = Field(title='Код ИКАО', unique=True, max_length=3, min_length=3)
+    иата: str = Field(title='Код ИКАО', unique=True, max_length=3, min_length=3)
     аэродром: Аэродром
+    название: Optional[str] = Field(default=None)
