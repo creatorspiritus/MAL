@@ -1,5 +1,21 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional
+from enum import Enum
+
+
+
+class ТипАэродрома(str, Enum):
+    """Тип аэродрома"""
+    АЭРОДРОМ = "АЭРОДРОМ"
+    ВЕРТОДРОМ = "ВЕРТОДРОМ"
+    ГИДРОДРОМ = "ГИДРОДРОМ"
+    ПЛОЩАДКА = "ПЛОЩАДКА"
+
+
+
+class ТипПолосы(str, Enum):
+    БЕТОН = "БЕТОН"
+    ГРУНТ = "ГРУНТ"
 
 
 
