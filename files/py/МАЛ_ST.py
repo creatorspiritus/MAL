@@ -1,5 +1,39 @@
 import streamlit as st
 from pandas import read_csv
+from collections import namedtuple
+
+разделитель = lambda x: " | " + x if x else ''
+
+@st.cache_data
+def Сводка():
+    return read_csv('../csv/Сводка.csv', index_col='ICAO')
+
+сводка = Сводка()
+
+@st.cache_data
+def IATA():
+    return read_csv('../csv/iata.csv', index_col='icao')
+
+iata = IATA()
+
+@st.cache_data
+def Агломерация():
+    return read_csv('../csv/Агломерация.csv', index_col='ICAO')
+
+агломерация = Агломерация()
+
+@st.cache_data
+def Маршруты():
+    return read_csv('../csv/ftd.csv', index_col='FT')
+
+маршруты = Маршруты()
+
+
+ЮВК = сводка[сводка.ВК == 1]
+СВК = сводка[сводка.ВК == 2]
+ЦВК = сводка[сводка.ВК == 3]
+
+ЮВК_наименования = [_ + разделитель(iata.loc[_]['iata'])]
 
 ###
 ### Боковая панель исходных данных
