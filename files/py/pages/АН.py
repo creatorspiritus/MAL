@@ -37,7 +37,7 @@ with st.sidebar.expander("Маршрут"):
     # крейсерская_скорость = st.number_input("Крейсерская скорость, км/ч", value=Vкр(тип=str(тип_ВС)))
     # расход = st.number_input("Расход ТС-1, кг/лч", value=Рлч(тип=str(тип_ВС)))
 
-col1, col2 = st.columns([2,1])
+col1, col2 = st.columns([3,2])
 
 with col1:
     st.write('Базовый узловой аэропорт')
