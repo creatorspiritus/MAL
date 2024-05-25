@@ -1,11 +1,14 @@
 import streamlit as st
-from pandas import read_csv, DataFrame
-from функции import Наименование, наименования
+from функции import Наименование
 
 st.title("Маршруты")
 st.divider()
-st.session_state.keys()
+
 a = []
+
+for _ in st.session_state.keys():
+    st.write(_)
+
 # for _ in st.session_state.keys():
 #     if (len(_) == 4) and st.session_state[_]:
 #         a.append(Наименование(_))    

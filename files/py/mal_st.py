@@ -3,6 +3,11 @@ from функции import *
 from классы import *
 from перечни import *
 
+
+
+
+
+
 радиус_агломерации = 100
 аэродром = "UNWW"
 

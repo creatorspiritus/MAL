@@ -10,6 +10,11 @@ st.divider()
 
 # st.write(названия)
 
+
+
+st.write(len(st.session_state))
+
+
 if "UNAA" not in st.session_state: st.session_state.UNAA = True
 if "UERA" not in st.session_state: st.session_state.UERA = True
 if "UEEA" not in st.session_state: st.session_state.UEEA = True
@@ -234,6 +239,9 @@ st.sidebar.number_input(
     value=st.session_state["радиус_зоны_ответственности"],
     key="радиус_зоны_ответственности"
 )
+
+st.write(len(st.session_state))
+
 
 st.checkbox("UNAA | ABA | Абакан", value=True, key="UNAA")
 st.checkbox("UERA | Айхал", value=True, key="UERA")
