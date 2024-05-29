@@ -1,5 +1,6 @@
 from sqlmodel import SQLModel, Field
 from collections import namedtuple
+import json
 
 К = namedtuple('КТА', 'широта долгота превышение')
 

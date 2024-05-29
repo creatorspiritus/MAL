@@ -20,5 +20,4 @@ class Вертодром(SQLModel, table=True):
     icao: str = Field(max_length=4)
     название: str | None = Field(default=None)
     город:  str | None = Field(default=None)
-
-
+    

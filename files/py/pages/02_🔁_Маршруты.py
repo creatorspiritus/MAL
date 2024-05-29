@@ -1,4 +1,5 @@
 import streamlit as st
+import json
 from функции import Наименование, Получить_таблицу, Vт, tр, Рлч, Керосин_сегодня
 from pandas import read_csv, DataFrame
 
@@ -42,4 +43,24 @@ try:
 except: st.write(f"Расчёты показателей регулярного рейса для самолёта {самолёт} из аэропорта {вылет} в аэропорт {прилёт} не производятся, поскольку маршрут не является расчётным для проекта МАЛ.")
 # finally: ...
 
+if 'самолёты' not in st.session_state:
+    with open('../json/Самолёты.json', 'r', encoding='utf8') as f:
+        st.session_state['самолёты'] = json.load(f)['Самолёты']
 
+col1, col2 = st.columns([5,1])
+with col1: st.write("Расчётный тип воздушного судна")
+with col2: st.write(самолёт)
+
+try:
+    col1, col2 = st.columns([5,1])
+    with col1: st.write("Максимальная взлётная масса, т")
+    with col2: st.write(str(st.session_state["самолёты"][самолёт]["Максимальная взлётная масса, т"]))
+except: ...
+finally: ...
+
+try:
+    col1, col2 = st.columns([5,1])
+    with col1: st.write("Масса снаряжённого, т")
+    with col2: st.write(str(st.session_state["самолёты"][самолёт]["Масса снаряжённого, т"]))
+except: ...
+finally: ...
