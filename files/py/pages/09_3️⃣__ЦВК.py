@@ -11,3 +11,4 @@ st.session_state["ЦВКВ"] = st.multiselect(
     "Аэропорты центрального воздушного коридора",
     default=st.session_state['ЦВК'],
     options=перечень_ЦВК)
+
