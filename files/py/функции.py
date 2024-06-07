@@ -3,6 +3,7 @@ from geopy.distance import geodesic
 from pandas import read_csv, DataFrame
 from классы import *
 from перечни import *
+from datetime import datetime
 
 черта = lambda x: ' | ' + x if x else ''
 
@@ -762,3 +763,33 @@ def ТТХВС(тип="Ил-114-300"):
             else: ...
     except: print("[ОШИБКА] Не найден тип ВС!")
     finally: return возврат
+
+def Техзапас(самолёты=[
+    "Ил-114-300",
+    "ТВРС-44 Ладога",
+    "ЛМС-192 Освей",
+    "ЛМС-901 Байкал"]):
+    возврат = 0
+    try:
+        for _ in самолёты:
+            возврат += Цена_самолёта(_)
+    except:
+        print("[ОШИБКА] Проверить перечень самолётов проекта")
+    finally:
+        return возврат
+
+def Цена_самолёта(самолёт= "Ил-114-300"):
+    возврат = 0
+    try:
+        for _ in перечень_самолёты:
+            if _['тип'] == самолёт:
+                возврат = int(_['Цена, руб'])
+            else:
+                ...
+    except:
+        print('[ОШИБКА] Проверить стоимость самолёта')
+    return возврат
+
+def Цена_акций():
+    дата = datetime.now()
+    
