@@ -2,6 +2,7 @@ import streamlit as st
 from функции import *
 from классы import *
 from перечни import *
+from datetime import date, timedelta
 
 
 if "радиус_зоны_ответственности" not in st.session_state:
@@ -115,6 +116,51 @@ if 'стоимость_техзапаса' not in st.session_state:
 
 if 'стоимость_акций' not in st.session_state:
     st.session_state['стоимость_акций'] = Цена_акций()
+
+if 'дата_начала_проекта' not in st.session_state:
+    st.session_state['дата_начала_проекта'] = date(2002, 8, 8)
+
+if 'дата_начала_предварительного_этапа' not in st.session_state:
+    st.session_state['дата_начала_предварительного_этапа'] = date(2020, 10, 27)
+
+if 'дата_начала_подготовительного_этапа' not in st.session_state:
+    st.session_state['дата_начала_подготовительного_этапа'] = date(2025, 5, 1)
+
+if 'дата_начала_первого_этапа' not in st.session_state:
+    st.session_state['дата_начала_первого_этапа'] = st.session_state['дата_начала_подготовительного_этапа'] + timedelta(365)
+
+if 'дата_начала_второго_этапа' not in st.session_state:
+    st.session_state['дата_начала_второго_этапа'] = st.session_state['дата_начала_первого_этапа'] + timedelta(90 * len(st.session_state['ЮВК']))
+
+if 'дата_начала_третьего_этапа' not in st.session_state:
+    st.session_state['дата_начала_третьего_этапа'] = st.session_state['дата_начала_второго_этапа'] + timedelta(90 * len(st.session_state['СВК']))
+
+with st.sidebar.expander("Даты"):
+    st.date_input(
+        "Начало проекта",
+        value=st.session_state['дата_начала_проекта'],
+        min_value=st.session_state['дата_начала_проекта'],
+        max_value=st.session_state['дата_начала_проекта'])
+    st.date_input(
+        "Начало предварительного этапа",
+        value=st.session_state['дата_начала_предварительного_этапа'],
+        min_value=st.session_state['дата_начала_предварительного_этапа'],
+        max_value=st.session_state['дата_начала_предварительного_этапа'])
+    st.date_input(
+        "Начало подготовительного этапа",
+        value=st.session_state['дата_начала_подготовительного_этапа'])
+    st.date_input(
+        "Начало I этапа (ЮВК)",
+        value=st.session_state['дата_начала_первого_этапа'],
+        min_value=st.session_state['дата_начала_первого_этапа'])
+    st.date_input(
+        "Начало II этапа (СВК)",
+        value=st.session_state['дата_начала_второго_этапа'],
+        min_value=st.session_state['дата_начала_второго_этапа'])
+    st.date_input(
+        "Начало III этапа (ЦВК)",
+        value=st.session_state['дата_начала_третьего_этапа'],
+        min_value=st.session_state['дата_начала_третьего_этапа'])
 
 st.title("Общая информация о проекте МАЛ")
 st.divider()
