@@ -1,6 +1,6 @@
 import streamlit as st
 from pandas import read_csv, DataFrame
-from функции import Наименование, Агломерация, УА, АПН, АН
+from функции import Наименование, Агломерация, УА, АПН, АН, Керосин_сегодня
 
 РЗА = st.session_state["радиус_зоны_агломерации"]
 РЗО = st.session_state["радиус_зоны_ответственности"]
@@ -16,6 +16,10 @@ st.write(s)
 аэропорт = аэропорт = st.sidebar.selectbox(
     "Выберите аэропорт для получения подробной информации",
     st.session_state['аэропорты'])
+
+АвмаГСМ = st.sidebar.number_input(
+    "Цена АвиаГСМ, руб/т без НДС",
+    value=Керосин_сегодня(аэропорт[:4]))
 
 st.subheader(
     'Информация по аэропорту ' + аэропорт)

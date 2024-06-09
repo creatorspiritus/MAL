@@ -91,7 +91,7 @@ if 'ЦВК' not in st.session_state:
     ]
 
 if 'цена_через_зарплату' not in st.session_state:
-    st.session_state['цена_через_зарплату'] = 0.1
+    st.session_state['цена_через_зарплату'] = 0.0302
 
 if 'цена_через_доход' not in st.session_state:
     st.session_state['цена_через_доход'] = 0.1
@@ -100,7 +100,7 @@ if 'загрузка_рейса' not in st.session_state:
     st.session_state['загрузка_рейса'] = 0.7
 
 if 'доход_билет' not in st.session_state:
-    st.session_state['доход_билет'] = 3000
+    st.session_state['доход_билет'] = Авиабилет()
 
 if 'доход_груз' not in st.session_state:
     st.session_state['доход_груз'] = 50
